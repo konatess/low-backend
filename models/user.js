@@ -1,0 +1,23 @@
+"use strict";
+
+export default function (sequelize, DataTypes) {
+    let User = sequelize.define("User", {
+        oAuthKey: {
+            type: DataTypes.STRING,
+            allowNull: false
+        },
+        displayName: {
+            type: DataTypes.STRING,
+            allowNull: false,
+            validate: {
+                len: [3, 50]
+            }
+        }
+    });
+    User.associate = function(models) {
+        User.hasMany(models.Story, {as: "Stories", foreignKey: "AuthorId"});
+        User.hasMany(models.Page, {as: "Pages", foreignKey: "AuthorId"});
+        User.hasMany(models.Link, {as: "Links", foreignKey: "AuthorId"});
+    };
+    return User;
+};

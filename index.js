@@ -5,6 +5,7 @@ import logoutRoute from'./routes/logout.js';
 import express, { json } from 'express';
 import expressSession from 'express-session';
 import cors from 'cors';
+import db from './models/index.js'
 const PORT = process.env.PORT || 3001;
 
 // configure Express app and install the JSON middleware for parsing JSON bodies
@@ -21,7 +22,7 @@ app.use(expressSession({
         secure: 'auto',
         httpOnly: true,
         maxAge: 3600000
-      }
+    }
 }));
 
 // configure CORS
@@ -37,4 +38,12 @@ app.use('/oauth-callback', oauthCallbackRoute);
 app.use('/logout', logoutRoute);
 
 // start server
-app.listen(PORT, () => console.log(`FusionAuth example app listening on port ${PORT}.`));
+app.listen(PORT, () => console.log(`Server listening on port ${PORT}.`));
+
+// check db
+try {
+    await db.sequelize.authenticate();
+    console.log('Connection has been established successfully.');
+  } catch (error) {
+    console.error('Unable to connect to the database:', error);
+  }
