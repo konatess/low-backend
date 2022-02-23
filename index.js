@@ -27,8 +27,8 @@ app.use(expressSession({
 
 // configure CORS
 app.use(cors({
-  origin: true,
-  credentials: true
+  	origin: true,
+  	credentials: true
 }));
 
 // use routes
@@ -44,6 +44,14 @@ app.listen(PORT, () => console.log(`Server listening on port ${PORT}.`));
 try {
     await db.sequelize.authenticate();
     console.log('Connection has been established successfully.');
-  } catch (error) {
-    console.error('Unable to connect to the database:', error);
-  }
+} catch (error) {
+	console.error('Unable to connect to the database:', error);
+}
+
+// sync db
+try {
+	await db.sequelize.sync();
+	console.log("Database synched")
+} catch (error) {
+	console.error("Database sync failed: ", error)
+}

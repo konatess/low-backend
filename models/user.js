@@ -1,5 +1,3 @@
-"use strict";
-
 export default function (sequelize, DataTypes) {
     let User = sequelize.define("User", {
         oAuthKey: {
