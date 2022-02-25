@@ -16,6 +16,9 @@ export default function (sequelize, DataTypes) {
         User.hasMany(models.Story, {as: "Stories", foreignKey: "AuthorId"});
         User.hasMany(models.Page, {as: "Pages", foreignKey: "AuthorId"});
         User.hasMany(models.Link, {as: "Links", foreignKey: "AuthorId"});
+        User.belongsToMany(models.Story, {through: "FaveStories", foreignKey: "ReaderId"});
+        User.belongsToMany(models.Page, {through: "Bookmarks", foreignKey: "ReaderId"});
+        User.belongsToMany(models.User, {as: "AuthorId", through: "FaveAuthors", foreignKey: "ReaderId", otherKey: "AuthorId"});
     };
     return User;
 };
