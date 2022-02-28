@@ -6,7 +6,7 @@ export default {
             throw new Error(str.error.message.notObj);
         }
         //create an object to hold info about the error that we'll pass to the front end
-        var errorInfo = {}; 
+        let errorInfo = {}; 
         //now look at the error object to figure out what to say!
         switch (err.message) {
         case str.error.noLogin: 

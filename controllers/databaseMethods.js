@@ -49,7 +49,7 @@ export default {
             })
         }
         else {
-            return new Error(str.error.message.invalid.author)
+            return error.messageTemplate({message: str.error.type.invalid.auth})
         }
     },
     findAllPublishedUsers: () => {
