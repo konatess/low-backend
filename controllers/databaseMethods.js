@@ -47,6 +47,9 @@ export default {
                     id: parseInt(userid)
                 }
             })
+            .catch( (err) => {
+                return error.messageTemplate(err)
+            })
         }
         else {
             return error.messageTemplate({message: str.error.type.invalid.auth})
