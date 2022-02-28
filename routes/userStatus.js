@@ -1,7 +1,9 @@
 import 'dotenv/config'
 import { Router } from 'express';
-const router = Router();
+import db from '../models/index.js';
 import request from 'request';
+// import user from '../models/user.js';
+const router = Router();
 
 router.get('/', (req, res) => {
     // token in session -> get user data and send it back to the react app
@@ -35,9 +37,22 @@ router.get('/', (req, res) => {
               },
   
               // callback
-              (error, response, body) => {
+              async (error, response, body) => {
+                // TODO: add db call for User
+                const [dbUser, created] = await db.User.findOrCreate({
+                  where: {
+                      oAuthKey: body.registration.id
+                  },
+                  defaults: {
+                      displayName: "test"
+                  }
+                });
                 res.send(
                   {
+					db: {
+						dbUser: dbUser,
+						created: created
+					},
                     user: {
                       ...introspectResponse,
                     },

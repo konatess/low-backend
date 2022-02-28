@@ -1,4 +1,5 @@
 import db from '../models/index.js';
+import str from "../constants/strings.js";
 
 export default {
     // check if id is valid, i.e. is (or can be parsed to) positive, non-zero integer.
@@ -14,12 +15,21 @@ export default {
         }
         return true
     },
+    isValidAuth: (authKey) => {
+        if (typeof authKey !== "string") {
+            return false
+        }
+        else if (authKey.match(/^[\w]{8}-[\w]{4}-[\w]{4}-[\w]{4}-[\w]{12}$/)) {
+            return true
+        }
+        return false
+    },
     storyIsReadable: function (storyId) {
         // The story must 1) exist in the db  2) have the 'isPublic' value set to true
         return new Promise(function (resolve, reject) {
             //check that id is valid
             if (!this.isValidId(storyId)) {
-                return reject(new Error("Invalid Story Id"));
+                return reject(new Error(str.error.type.invalid.story));
             }
             // query the database for the story by its id
             db.Story.findOne({ where: { id: parseInt(storyId) } }).then(function (storyResult, err) {
@@ -28,10 +38,10 @@ export default {
                 }
                 else {
                     if (!storyResult) {
-                        return reject(new Error("Story Not Found"));
+                        return reject(new Error(str.error.type.notFound.story));
                     }
                     if (!storyResult.isPublic) {
-                        return reject(new Error("Story Not Public"));
+                        return reject(new Error(str.error.type.notPublic.story));
                     }
                     resolve(storyResult);
                 }
@@ -42,10 +52,10 @@ export default {
         // checks to see if the current user is signed in and has permissions to write to that story
         return new Promise(function (resolve, reject) {
             if (!this.isValidId(storyId)) {
-                return reject(new Error("Invalid Story Id"));
+                return reject(new Error(str.error.type.invalid.story));
             }
             if (!this.isValidId(authorId)) {
-                return reject(new Error("Invalid Author Id"));
+                return reject(new Error(str.error.type.invalid.author));
             }
             // query the database for the story by id
             db.Story.findOne({ where: { id: parseInt(storyId) } }).then(function (storyResult, err) {
@@ -53,11 +63,11 @@ export default {
                     return reject(err);
                 }
                 if (!storyResult) {
-                    return reject(new Error("Story Not Found"));
+                    return reject(new Error(str.error.type.notFound.story));
                 }
                 // if this particular author did not write it, we are not letting them edit
                 if (storyResult.AuthorId !== authorId) {
-                    return reject(new Error("Story Permission Denied"));
+                    return reject(new Error(str.error.type.denied.story));
                 }
                 return resolve(storyResult);
             });
@@ -67,7 +77,7 @@ export default {
         // pages are publicly readable if the story they belong to is marked public and they are finished, and not orphaned
         return new Promise(function (resolve, reject) {
             if (!this.isValidId(pageId)) {
-                return reject(new Error("Invalid Page Id"));
+                return reject(new Error(str.error.type.invalid.page));
             }
             // look up that page in the db, along with the associated story
             db.Page.findOne({
@@ -83,16 +93,16 @@ export default {
                     return reject(error);
                 }
                 if (!pageResult) {
-                    return reject(new Error("Page Not Found"));
+                    return reject(new Error(str.error.type.notFound.page));
                 }
                 if (!pageResult.Story.isPublic) {
-                    return reject(new Error("Story Not Public"));
+                    return reject(new Error(str.error.type.notPublic.story));
                 }
                 if (pageResult.isOrphaned) {
-                    return reject(new Error("Orphaned Page"));
+                    return reject(new Error(str.error.type.notPublic.page.orphan));
                 }
                 if (!pageResult.contentFinished) {
-                    return reject(new Error("Page Not Finished"));
+                    return reject(new Error(str.error.type.notPublic.page.notFinished));
                 }
                 return resolve(pageResult);
             });
@@ -102,10 +112,10 @@ export default {
         // page is writeable if author owns the page
         return new Promise(function (resolve, reject) {
             if (!this.isValidId(authorId)) {
-                return reject(new Error("Invalid Author Id"));
+                return reject(new Error(str.error.type.invalid.author));
             }
             if (!this.isValidId(pageId)) {
-                return reject(new Error("Invalid Page Id"));
+                return reject(new Error(str.error.type.invalid.page));
             }
             db.Page.findOne({
                 where: {
@@ -116,10 +126,10 @@ export default {
                     return reject(error);
                 }
                 if (!pageResult) {
-                    return reject(new Error("Page Not Found"));
+                    return reject(new Error(str.error.type.notFound.page));
                 }
                 if (pageResult.AuthorId !== authorId) {
-                    return reject(new Error("Page Permission Denied"));
+                    return reject(new Error(str.error.type.denied.page));
                 }
                 return resolve(pageResult);
             });
