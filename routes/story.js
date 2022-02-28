@@ -6,15 +6,15 @@ import getError from '../controllers/error.js';
 const router = Router();
 
 // Story routes get story info
-router.get("/:storyid", (req, res) => {
+router.get("/:storyid", async (req, res) => {
     // get story details of one story
-    check.storyIsReadable(req.params.storyid)
-    .then((result) => {
-        res.json(result);
-    },
-    (err) => {
-        res.sendStatus(getError.statusCode(err))
-    })
+    let story = await dbMethods.findStory(req.params.storyid);
+    if (story.message) {
+        res.status(getError.statusCode(story)).send(getError.messageTemplate(story)).end();
+    }
+    else {
+        res.send(story)
+    }
 });
 
 // get all the pages in a story, for author only
@@ -29,15 +29,16 @@ router.get("/:storyid/allpages", (req, res) => {
 
 router.post("/create", async (req, res) => {
     // if (!req.session.token) {
-    //     let err = { message: "Not Logged In" }
+    //     let err = { message: str.error.type.noLogin }
     //     return res.render(getError.statusCode(err), getError.messageTemplate(err));
     // }
     let theStory = await db.Story.create({
         title: req.body.title,
+        description: req.body.description,
         chooseNotToWarn: req.body.chooseNotToWarn,
         violence: req.body.violence,
         nsfw: req.body.nsfw,
-        nonConsent: req.body.nsfw,
+        nonConsent: req.body.nonConsent,
         characterDeath: req.body.characterDeath,
         profanity: req.body.profanity,
         isPublic: req.body.isPublic,
@@ -45,14 +46,12 @@ router.post("/create", async (req, res) => {
         doneByDefault: req.body.doneByDefault,
         AuthorId: req.body.authorId
     }).catch( (err) => {
-        let storyError = new Error(err.message);
-        return res.render("404", getError.messageTemplate(storyError));
+        return res.status(err).send(getError.messageTemplate(err));
     });
     if (req.body.tags) {
         let tagsArr = req.body.tags.split(",");
         theStory.setTags(tagsArr, { where: { StoryId: theStory.id } }).catch( (err) => {
-            let storyError = new Error(err.message);
-            return res.render("404", getError.messageTemplate(storyError));
+            return res.status(err).send(getError.messageTemplate(err));
         });
     }
     return res.status(200).send({ id: theStory.id });

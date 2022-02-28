@@ -1,12 +1,11 @@
 import db from '../models/index.js';
 import check from './routevalidators.js';
 import str from '../constants/strings.js';
-import error from './error.js';
 
 export default {
     userSignIn: async (authKey) => {
         if (!check.isValidAuth(authKey)) {
-            return new Error(str.error.type.invalid.auth)
+            return { message: str.error.type.invalid.auth }
         }
         else {
             const [dbUser, created] = await db.User.findOrCreate({
@@ -20,27 +19,22 @@ export default {
             return { dbUser: dbUser, created: created }
         }
     },
-    findUser: (userId) => {
-        return db.User.findOne({
-            where: {
-                id: userId
-            }
-        }).then((dbUser) => {
-            return dbUser;
-        });
+    findUser: async (userId) => {
+        if (!check.isValidId(userId)) {
+            return { message: str.error.type.invalid.author}
+        }
+        else {
+            let dbUser = await db.User.findOne({ where: { id: userId } })
+            return dbUser
+        }
     },
-    checkUsernames: (username) => {
-        return db.User.count({
-            where: {
-                displayName: username
-            }
-        }).then((count) => {
-            return count === 0 ? true : false;
-        });
+    checkUsernames: async (username) => {
+        let count = await db.User.count({ where: { displayName: username } })
+        return count === 0 ? true : false
     },
-    updateUser: (userid, username) => {
+    updateUser: async (userid, username) => {
         if (check.isValidId(userid)) {
-            return db.User.update({
+            let updated = await db.User.update({
                 displayName:  username
             }, {
                 where: {
@@ -48,11 +42,12 @@ export default {
                 }
             })
             .catch( (err) => {
-                return error.messageTemplate(err)
+                return err
             })
+            return updated
         }
         else {
-            return error.messageTemplate({message: str.error.type.invalid.auth})
+            return {message: str.error.type.invalid.auth}
         }
     },
     findAllPublishedUsers: () => {
@@ -68,14 +63,14 @@ export default {
             return dbUser;
         });
     },
-    findStory: (storyId) => {
-        return db.Story.findOne({
-            where: {
-                id: storyId
-            }
-        }).then((dbStory) => {
-            return dbStory;
-        });
+    findStory: async (storyId) => {
+        if (!check.isValidId(storyId)) {
+            return { message: str.error.type.invalid.story }
+        }
+        else {
+            let story = await db.Story.findOne({ where: { id: storyId } });
+            return check.storyIsReadable(story) // returns either story object or error object
+        }
     },
     findAllPublicStories: () => {
         return db.Story.findAll({

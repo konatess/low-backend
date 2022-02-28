@@ -24,6 +24,16 @@ export default {
             errorInfo.url = "/";
             errorInfo.linkDisplay = str.linkDisplay.home;
             break;
+        case str.error.type.invalid.auth:
+            errorInfo.errorMessage = str.error.message.invalid.auth;
+            errorInfo.url = "/";
+            errorInfo.linkDisplay = str.linkDisplay.home;
+            break;
+        case str.error.type.invalid.unique:
+            errorInfo.errorMessage = str.error.message.invalid.unique;
+            errorInfo.url = "/";
+            errorInfo.linkDisplay = str.linkDisplay.home;
+            break;
         case str.error.type.invalid.page: 
             errorInfo.errorMessage = str.error.message.invalid.page;
             errorInfo.url = "/";
@@ -89,7 +99,7 @@ export default {
     },
     statusCode: function(err) {
         if(typeof(err)!=="object") {
-            throw new Error(str.error.message.notObj);
+            throw new Error({message: str.error.message.notObj});
         }
         //otherwise, send the right type of status (depending on the error)
         var statusNumber;
@@ -102,6 +112,12 @@ export default {
             statusNumber = 400;
             break;
         case str.error.type.invalid.author:
+            statusNumber = 400;
+            break;
+        case str.error.type.invalid.auth:
+            statusNumber = 400;
+            break;
+        case str.error.type.invalid.unique:
             statusNumber = 400;
             break;
         case str.error.type.invalid.page: 

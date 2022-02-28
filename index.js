@@ -1,5 +1,4 @@
-import userStatus from './routes/userStatus.js';
-import userManage from './routes/userManage.js';
+import userRoute from './routes/user.js';
 import loginRoute from './routes/login.js';
 import oauthCallbackRoute from './routes/oauth-callback.js';
 import logoutRoute from './routes/logout.js';
@@ -34,12 +33,11 @@ app.use(cors({
 }));
 
 // use routes
-app.use('/status', userStatus);
+app.use('/user', userRoute);
 app.use('/login', loginRoute);
 app.use('/oauth-callback', oauthCallbackRoute);
 app.use('/logout', logoutRoute);
 app.use('/story', storyRoutes);
-app.use('/user', userManage);
 
 // start server
 app.listen(PORT, () => console.log(`Server listening on port ${PORT}.`));

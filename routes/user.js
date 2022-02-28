@@ -1,8 +1,9 @@
 import 'dotenv/config'
 import { Router } from 'express';
 import request from 'request';
-import databaseMethods from '../controllers/databaseMethods.js';
-// import user from '../models/user.js';
+import str from '../constants/strings.js';
+import dbMethods from '../controllers/databaseMethods.js';
+import getError from '../controllers/error.js';
 const router = Router();
 
 router.get('/', (req, res) => {
@@ -38,7 +39,10 @@ router.get('/', (req, res) => {
 
 						// callback
 						async (error, response, body) => {
-							const dbResponse = await databaseMethods.userSignIn(body.registration.id);
+							const dbResponse = await dbMethods.userSignIn(body.registration.id);
+							if (dbResponse.message) {
+								return res.status(getError.statusCode(dbResponse.message)).send(getError.messageTemplate(dbResponse.message))
+							}
 							res.send(
 								{
 									db: {
@@ -71,6 +75,27 @@ router.get('/', (req, res) => {
 	else {
 		res.send({});
 	}
+});
+
+// so far the only updateable user attribute is username
+router.put("/:userid", async (req, res) => {
+    let isUnique = await dbMethods.checkUsernames(req.body.username);
+    if (isUnique) {
+        let updatedUser = await dbMethods.updateUser(req.params.userid, req.body.username);
+        if (updatedUser.message) {
+            return res.status(getError.statusCode(updatedUser)).send(getError.messageTemplate(updatedUser));
+        }
+        else if (updatedUser[0] === 0) {
+            return res.status(404).end();
+        }
+        else {
+            return res.status(200).end();
+        }
+    }
+    else {
+        let err = {message: str.error.type.invalid.unique};
+        return res.status(getError.statusCode(err)).send(getError.messageTemplate(err))
+    }
 });
 
 export default router;

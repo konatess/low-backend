@@ -24,29 +24,16 @@ export default {
         }
         return false
     },
-    storyIsReadable: function (storyId) {
-        // The story must 1) exist in the db  2) have the 'isPublic' value set to true
-        return new Promise(function (resolve, reject) {
-            //check that id is valid
-            if (!this.isValidId(storyId)) {
-                return reject(new Error(str.error.type.invalid.story));
-            }
-            // query the database for the story by its id
-            db.Story.findOne({ where: { id: parseInt(storyId) } }).then(function (storyResult, err) {
-                if (err) {
-                    return reject(err);
-                }
-                else {
-                    if (!storyResult) {
-                        return reject(new Error(str.error.type.notFound.story));
-                    }
-                    if (!storyResult.isPublic) {
-                        return reject(new Error(str.error.type.notPublic.story));
-                    }
-                    resolve(storyResult);
-                }
-            });
-        });
+    storyIsReadable: (story) => {
+        if (!story) {
+            return { message: str.error.type.notFound.story }
+        }
+        else if (!story.isPublic) {
+            return { message: str.error.type.notPublic.story }
+        }
+        else {
+            return story
+        }
     },
     storyIsWriteable: function (storyId, authorId) {
         // checks to see if the current user is signed in and has permissions to write to that story

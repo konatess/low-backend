@@ -4,6 +4,7 @@ export default {
             noLogin: "Not Logged In",
             invalid: {
                 auth: "Invalid Authorization",
+                unique: "Name Not Unique",
                 story: "Invalid Story Id",
                 author: "Invalid Author Id",
                 page: "Invalid Page Id",
@@ -32,8 +33,10 @@ export default {
             notObj: "Error handler module expects an object!",
             noLogin: "Sorry, you need to be logged in to do that.",
             invalid: {
+                auth: "Stop messing with me. That's not a valid id, and you shouldn't be here.",
                 story: "Sorry, that's not a story.",
                 author: "Please log in first!",
+                unique: "Sorry, that username is already taken.",
                 page: "Sorry, that's not a page.",
                 tag: "What tag were you looking for?",
             },
