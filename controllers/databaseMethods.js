@@ -1,6 +1,7 @@
 import db from '../models/index.js';
 import check from './routevalidators.js';
 import str from '../constants/strings.js';
+import error from './error.js';
 
 export default {
     userSignIn: async (authKey) => {
@@ -34,8 +35,22 @@ export default {
                 displayName: username
             }
         }).then((count) => {
-            return count;
+            return count === 0 ? true : false;
         });
+    },
+    updateUser: (userid, username) => {
+        if (check.isValidId(userid)) {
+            return db.User.update({
+                displayName:  username
+            }, {
+                where: {
+                    id: parseInt(userid)
+                }
+            })
+        }
+        else {
+            return new Error(str.error.message.invalid.author)
+        }
     },
     findAllPublishedUsers: () => {
         return db.User.findAll({
