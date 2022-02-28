@@ -50,7 +50,10 @@ router.get('/', (req, res) => {
                 res.send(
                   {
 					db: {
-						dbUser: dbUser,
+						dbUser: {
+              id: dbUser.id,
+              displayName: dbUser.displayName
+            },
 						created: created
 					},
                     user: {
