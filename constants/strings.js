@@ -9,6 +9,7 @@ export default {
                 author: "Invalid Author Id",
                 page: "Invalid Page Id",
                 tag: "Invalid Tag Id",
+                string: "Invalid String",
             },
             notFound: {
                 story: "Story Not Found",
@@ -40,6 +41,7 @@ export default {
                 unique: "Sorry, that username is already taken.",
                 page: "Sorry, that's not a page.",
                 tag: "What tag were you looking for?",
+                string: "String did not pass checks",
             },
             notFound: {
                 story: "Sorry, we couldn't find that story.",

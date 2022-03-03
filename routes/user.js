@@ -79,9 +79,9 @@ router.get('/', (req, res) => {
 
 // so far the only updateable user attribute is username
 router.put("/:userid", async (req, res) => {
-	// uniqueName returns boolean
+	// uniqueName returns object with message. if message === 0, name is good
     let isUnique = await dbMethods.uniqueName(req.body.username);
-    if (isUnique) {
+    if (!isUnique.message) {
         let updatedUser = await dbMethods.updateUser(req.params.userid, req.body.username);
         if (updatedUser.message) {
             return res.status(getError.statusCode(updatedUser)).send(getError.messageTemplate(updatedUser));
@@ -93,10 +93,7 @@ router.put("/:userid", async (req, res) => {
             return res.status(200).end();
         }
     }
-    else {
-        let err = { message: str.error.type.invalid.unique };
-        return res.status(getError.statusCode(err)).send(getError.messageTemplate(err))
-    }
+    return res.status(getError.statusCode(isUnique)).send(getError.messageTemplate(isUnique))
 });
 
 export default router;

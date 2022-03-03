@@ -1,6 +1,7 @@
 import db from '../models/index.js';
 import check from './routevalidators.js';
 import str from '../constants/strings.js';
+import dbvalid from './dbvalidators.js';
 import { where } from 'sequelize/types';
 
 export default {
@@ -30,8 +31,11 @@ export default {
         }
     },
     uniqueName: async (username) => {
+        if (dbvalid.userName(username)) {
+            return { message: str.error.type.invalid.string }
+        }
         let count = await db.User.count({ where: { displayName: username } })
-        return count === 0 ? true : false
+        return count === 0 ? { message: 0 } : { message: str.error.type.invalid.unique }
     },
     updateUser: async (userid, username) => {
         if (check.isValidId(userid)) {
@@ -58,7 +62,8 @@ export default {
                 where: {
                     "isPublic": true,
                     "isFinished": true
-                }
+                },
+                attributes: ["id", "title", "description"]
             }],   
         }).then((dbUser) => {
             return dbUser;
@@ -81,7 +86,8 @@ export default {
             },
             include: [{
                 model: db.User,
-                as: "Author"
+                as: "Author",
+                attributes: ["id", "displayName"]
             }],
             order: [["title", "ASC"]]
         }).then((stories) => {
@@ -120,35 +126,16 @@ export default {
                     isPublic: true,
                     isFinished: true
                 },
+                attributes: ["id", "title", "description"],
                 include: [{
-                    model: db.User, as: "Author"
+                    model: db.User, as: "Author",
+                    attributes: ["id", "displayName"]
                 }]
             }]
         }).then( (result) => {
             return result;
         });
     },
-    findAllTagsAndStoriesCount: () => {
-    return db.Tag.findAll({
-        group: ["Tag.id"],
-        includeIgnoreAttributes: false,
-        include: [{
-            model: db.Story,
-            where: {
-                isPublic: true,
-                isFinished: true
-            }
-        }],
-        attributes: [
-            "id",
-            "TagName",
-            [db.sequelize.fn("COUNT", db.sequelize.col("Stories.id")), "num_stories"],
-        ],
-        order: [[db.sequelize.fn("COUNT", db.sequelize.col("Stories.id")), "DESC"]]
-    }).then( (result) => {
-        return result;
-    });
-},
     findAllAuthorStories: (userId) => {
         return db.Story.findAll({
             where: {
@@ -243,7 +230,10 @@ export default {
         });
     },
     tagExists: (tagName) => {
-        var lowercase = tagName.toLowerCase();
+        if (!dbvalid.tagName) {
+            return { message: str.error.type.invalid.string }
+        }
+        let lowercase = tagName.toLowerCase();
         return db.Tag.findOne({
             where: {
                 tagName: db.sequelize.where(db.sequelize.fn("LOWER", db.sequelize.col("tagName")), lowercase)
@@ -272,11 +262,15 @@ export default {
         });
     },
     topFiveTags: () => {
+        // TODO: sequelize this better
         const dbTags = db.sequelize.query("select Tags.id, Tags.TagName, COUNT(Stories.id) as num_stories from Tags left join StoryTag on StoryTag.TagId = Tags.id left join Stories on StoryTag.StoryId = Stories.id where Stories.isPublic = 1 and Stories.isFinished = 1 group by Tags.id order by num_stories desc limit 5;",
             { type: db.Sequelize.QueryTypes.SELECT });
         return dbTags;
     },
     findFirstPage: (storyId) => {
+        if (!check.isValidId(storyId)) {
+            return { message: str.error.type.invalid.story }
+        }
         return db.Page.findOne({
             where: {
                 AuthorId: authorId,
@@ -378,11 +372,28 @@ export default {
             }
         });
     },
-    createNewLink: (linkObj) => {
-        return db.Link.create(linkObj).then((newLink) => {
-            return newLink;
+    createNewLink: async (linkObj) => {
+        let [ newLink, created ] = await db.Link.findOrCreate({ 
+            where: { 
+                FromPageId: linkObj.FromPageId,
+                ToPageId: linkObj.ToPageId
+            },
+            defaults: {
+                linkName: linkObj.linkName,
+                AuthorId: linkObj.AuthorId,
+                StoryId: linkObj.StoryId,
+            }
         });
+        return
+        // return db.Link.create(linkObj).then((newLink) => {
+        //     return newLink;
+        // });
     },
+    // createNewLink: (linkObj) => {
+    //     return db.Link.create(linkObj).then((newLink) => {
+    //         return newLink;
+    //     });
+    // },
     createMultipleLinks: (linkObjArray) => {
         return db.Link.bulkCreate(linkObjArray).then((newLinks) => {
             return newLinks;
