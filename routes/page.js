@@ -5,22 +5,85 @@ import getError from '../controllers/error.js';
 const router = Router();
 
 //PAGES API
-//Simple API to get one publicly available page to a story
-router.get("/:pageid", (req, res) => {
-    //check if the page is readable
-    check.pageIsReadable(req.params.pageid)
-        .then( (result) => {
-            //if so, send the page as a json object
-            res.json(result);
-        }, (err) => {
-            //otherwise, if an error occurred, send the appropriate error code
-            res.sendStatus(getError.statusCode(err));
-        });
+//get one publicly available page to a story
+router.get("/:pageid", async (req, res) => {
+    let page = await dbMethods.findPageById(req.params.pageid)
+    if (page.message) {
+        res.status(getError.statusCode(page)).send(getError.messageTemplate(page)).end();
+    }
+    else {
+        res.send(story)
+    }
 });
 
-// create new page
+// new page
 router.post("/create", async (req, res) => {
+    let childLinksArr = [];
+    // this returns either an error object with a message, or the page object
     let page = await dbMethods.createNewPage({
+        title: req.body.title,
+        content: req.body.content,
+        isStart: req.body.isStart,
+        isTBC: req.body.isTBC,
+        isEnding: req.body.isEnding,
+        isLinked: req.body.children.length || false,
+        isOrphaned: req.body.isOrphaned,
+        contentFinished: req.body.contentFinished,
+        AuthorId: req.body.authorId,
+        StoryId: req.body.storyId,
+    })
+    // page will have .message if it's actually an error object, but not if it's a page object
+    if (page.message) {
+        return res.status(getError.statusCode(page)).send(getError.messageTemplate(page))
+    }
+    // check if page was given child page links before saving
+    if (req.body.children.length) {
+        for (let i = 0; i < req.body.children.length; i++) {
+            let toId = 0;
+            if (req.body.children[i].ToPageId === "blank") {
+                let childTitle = req.body.children[i].linkName === "Continue" ? "Continue from " + page.title : req.body.children[i].linkName;
+                let childPage = await dbMethods.createNewPage({
+                    AuthorId: req.body.authorId,
+                    StoryId: req.body.storyId,
+                    title: childTitle,
+                    content: "And then?",
+                    contentFinished: false
+                });
+                // checking for error, same as initial page creation
+                if (childPage.message) {
+                    return res.status(getError.statusCode(childPage)).send(getError.messageTemplate(childPage))
+                }
+                toId = childPage.id;
+            }
+            else {
+                toId = req.body.children[i].ToPageId;
+            }
+            // same as page, link will return either error object with message, or link object
+            let newLink = await dbMethods.createNewLink({
+                linkName: req.body.children[i].linkName,
+                AuthorId: req.body.authorId,
+                StoryId: req.body.storyId,
+                FromPageId: page.id,
+                ToPageId: toId
+            })
+            // handle error
+            if (newLink.message) {
+                return res.status(getError.statusCode(newLink)).send(getError.messageTemplate(newLink))
+            }
+            // gather childLinks to pass to the front end
+            // if multiple pages were created, user can choose what to work on next.
+            childLinksArr.push(newLink);
+        }
+    }
+    return res.status(200).send({storyId: page.StoryId, pageId: page.id, authorId: page.AuthorId, childLinks: childLinksArr});
+})
+
+// update an existing page
+router.put("/update/:pageid", async (req, res) => {
+    let childLinksArr = [];
+    // this returns either an error object with a message, or the page object
+    // db method includes some error handling
+    let page = await dbMethods.updatePage({
         title: req.body.title,
         content: req.body.content,
         isStart: req.body.isStart,
@@ -28,103 +91,56 @@ router.post("/create", async (req, res) => {
         isEnding: req.body.isEnding,
         isLinked: req.body.isLinked,
         isOrphaned: req.body.isOrphaned,
-        contentFinished: req.body.contentFinished,
-        AuthorId: req.body.authorId,
-        StoryId: req.body.storyid,
-    }).catch(function(err) {
-        return alert(err.message);
+        contentFinished: req.body.contentFinished
     });
-    if(page){
-        let children = JSON.parse(req.body.children);
-        if (children) {
-            for (let i = 0; i < children.length; i++) {
-                let toId = 0;
-                if (children[i].ToPageId === "blank") {
-                    let pagetitle = children[i].linkName;
-                    if (pagetitle === "Continue") {
-                        pagetitle = "Continue from " + page.title;
-                    }
-                    let childpage = await dbMethods.createNewPage({
-                        AuthorId: req.body.authorId,
-                        StoryId: req.body.storyid,
-                        title: pagetitle,
-                        content: "And then?"
-                    });
-                    toId = childpage.id;
-                }
-                else {
-                    toId = children[i].ToPageId;
-                }
-                await dbMethods.createNewLink({
-                    linkName: children[i].linkName,
+    // check for errors and return if needed
+    if (page.message) {
+        return res.status(getError.statusCode(page)).send(getError.messageTemplate(page))
+    }
+    // were new child pages added during editing? We'll create them here.
+    if (req.body.children.length) {
+        for (let i = 0; i < req.body.children.length; i++) {
+            let toId = 0;
+            if (req.body.children[i].ToPageId === "blank") {
+                let childTitle = req.body.children[i].linkName === "Continue" ? "Continue from " + page.title : req.body.children[i].linkName;
+                let childPage = await dbMethods.createNewPage({
                     AuthorId: req.body.authorId,
-                    StoryId: req.body.storyid,
-                    FromPageId: page.id,
-                    ToPageId: toId
-                }).catch((err) => {
-                    return alert(err.message);
+                    StoryId: req.body.storyId,
+                    title: childTitle,
+                    content: "And then?",
+                    contentFinished: false
                 });
+                // checking for error, same as initial page creation
+                if (childPage.message) {
+                    return res.status(getError.statusCode(childPage)).send(getError.messageTemplate(childPage))
+                }
+                toId = childPage.id;
             }
-        }
-        return res.status(200).send({storyId: page.StoryId, pageId: page.id, toPageId: toId, authorId: page.AuthorId});
-    }
-});
-
-// update an existing page
-router.put("/update/:pageid", async (req, res) => {
-    let pageToUpdate = await check.pageIsWriteable(req.params.pageid, req.body.authorId, req.body.storyid)
-    if (pageToUpdate) {
-        pageToUpdate.update({
-            title: req.body.title,
-            content: req.body.content,
-            isStart: req.body.isStart,
-            isTBC: req.body.isTBC,
-            isEnding: req.body.isEnding,
-            isLinked: req.body.isLinked,
-            isOrphaned: req.body.isOrphaned,
-            contentFinished: req.body.contentFinished
-        }).catch((err) => {
-            return alert(err.message);
-        });
-        let children = JSON.parse(req.body.children);
-        if (children) {
-            let childLinks = [];
-            for (let i = 0; i < children.length; i++) {
-                let toId = 0;
-                let pagetitle = children[i].linkName;
-                if (pagetitle === "Continue") {
-                    pagetitle = "Continue from " + pageToUpdate.title;
-                }
-                if (children[i].ToPageId === "blank") {
-                    let childpage = await dbMethods.createNewPage({
-                        AuthorId: req.session.token,
-                        StoryId: req.body.storyid,
-                        title: pagetitle,
-                        content: "And then?"
-                    });
-                    toId = childpage.id;
-                }
-                else {
-                    toId = children[i].ToPageId;
-                }
-                let link = await dbMethods.createNewLink({
-                    linkName: children[i].linkName,
-                    AuthorId: req.session.token,
-                    StoryId: req.body.storyid,
-                    FromPageId: pageToUpdate.id,
-                    ToPageId: toId
-                }).catch(function(err){
-                    return alert(err.message);
-                });
-                childLinks.push(link);
+            else {
+                toId = req.body.children[i].ToPageId;
             }
-            pageToUpdate.setChildLinks(childLinks);
+            // same as page, link will return either error object with message, or link object
+            let newLink = await dbMethods.createNewLink({
+                linkName: req.body.children[i].linkName,
+                AuthorId: req.body.authorId,
+                StoryId: req.body.storyId,
+                FromPageId: page.id,
+                ToPageId: toId
+            })
+            // handle error
+            if (newLink.message) {
+                return res.status(getError.statusCode(newLink)).send(getError.messageTemplate(newLink))
+            }
+            // gather childLinks to pass to the front end
+            // if multiple pages were created, user can choose what to work on next.
+            childLinksArr.push(newLink);
         }
-        return res.status(200).send({storyId: pageToUpdate.StoryId, toPageId: childpage.id});
     }
+    return res.status(200).send({storyId: page.StoryId, pageId: page.id, authorId: page.AuthorId, childLinks: childLinksArr});
 });
 
 // delete an existing page
+// TODO: update db method and move check method call to db method
 router.delete("/api/page/delete/:id", async (req, res) => {
     if(check.pageIsWriteable(req.body.pageid, req.session.token, req.body.storyid)) {
         let deletedPage = await dbMethods.deletePage(req.body.pageid).catch( (err) => {

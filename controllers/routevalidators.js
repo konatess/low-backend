@@ -24,105 +24,54 @@ export default {
         }
         return false
     },
-    storyIsReadable: (story) => {
-        if (!story) {
+    storyIsReadable: (storyObj) => {
+        if (!storyObj) {
             return { message: str.error.type.notFound.story }
         }
-        else if (!story.isPublic) {
+        else if (!storyObj.isPublic) {
             return { message: str.error.type.notPublic.story }
         }
         else {
-            return story
+            return storyObj
         }
     },
-    storyIsWriteable: function (storyId, authorId) {
-        // checks to see if the current user is signed in and has permissions to write to that story
-        return new Promise(function (resolve, reject) {
-            if (!this.isValidId(storyId)) {
-                return reject(new Error(str.error.type.invalid.story));
-            }
-            if (!this.isValidId(authorId)) {
-                return reject(new Error(str.error.type.invalid.author));
-            }
-            // query the database for the story by id
-            db.Story.findOne({ where: { id: parseInt(storyId) } }).then(function (storyResult, err) {
-                if (err) { 
-                    return reject(err);
-                }
-                if (!storyResult) {
-                    return reject(new Error(str.error.type.notFound.story));
-                }
-                // if this particular author did not write it, we are not letting them edit
-                if (storyResult.AuthorId !== authorId) {
-                    return reject(new Error(str.error.type.denied.story));
-                }
-                return resolve(storyResult);
-            });
-        });
+    storyIsWriteable: (authorId, storyObj) => {
+        if (!storyObj) {
+            return { message: str.error.type.notFound.story }
+        }
+        else if (storyObj.AuthorId && storyObj.AuthorId !== authorId) {
+            return { message: str.error.type.denied.story }
+        }
+        return storyObj
     },
-    pageIsReadable: function (pageId) {
-        // pages are publicly readable if the story they belong to is marked public and they are finished, and not orphaned
-        return new Promise(function (resolve, reject) {
-            if (!this.isValidId(pageId)) {
-                return reject(new Error(str.error.type.invalid.page));
-            }
-            // look up that page in the db, along with the associated story
-            db.Page.findOne({
-                where: {
-                    id: parseInt(pageId)
-                },
-                include: [{
-                    model: db.Story,
-                    as: "Story"
-                }]
-            }).then(function (pageResult, error) {
-                if (error) {
-                    return reject(error);
-                }
-                if (!pageResult) {
-                    return reject(new Error(str.error.type.notFound.page));
-                }
-                if (!pageResult.Story.isPublic) {
-                    return reject(new Error(str.error.type.notPublic.story));
-                }
-                if (pageResult.isOrphaned) {
-                    return reject(new Error(str.error.type.notPublic.page.orphan));
-                }
-                if (!pageResult.contentFinished) {
-                    return reject(new Error(str.error.type.notPublic.page.notFinished));
-                }
-                return resolve(pageResult);
-            });
-        });
+    pageIsReadable: (pageObj) => {
+        if (!pageObj) {
+            return { message: str.error.type.notFound.page }
+        }
+        if (!pageObj.Story.isPublic) {
+            return { message: str.error.type.notPublic.story }
+        }
+        if (pageObj.isOrphaned) {
+            return { message: str.error.type.notPublic.page.orphan }
+        }
+        if (!pageObj.contentFinished) {
+            return { message: str.error.type.notPublic.page.notFinished }
+        }
+        return pageObj
     },
-    pageIsWriteable: function (pageId, authorId) {
-        // page is writeable if author owns the page
-        return new Promise(function (resolve, reject) {
-            if (!this.isValidId(authorId)) {
-                return reject(new Error(str.error.type.invalid.author));
-            }
-            if (!this.isValidId(pageId)) {
-                return reject(new Error(str.error.type.invalid.page));
-            }
-            db.Page.findOne({
-                where: {
-                    id: parseInt(pageId)
-                }
-            }).then(function (pageResult, error) {
-                if (error) {
-                    return reject(error);
-                }
-                if (!pageResult) {
-                    return reject(new Error(str.error.type.notFound.page));
-                }
-                if (pageResult.AuthorId !== authorId) {
-                    return reject(new Error(str.error.type.denied.page));
-                }
-                return resolve(pageResult);
-            });
-        });
+    pageIsWriteable: (authorId, pageObj) => {
+        if (!pageObj) {
+            return { message: str.error.type.notFound.page }
+        }
+        else if (pageObj.AuthorId && pageObj.AuthorId !== authorId) {
+            return { message: str.error.type.denied.page }
+        }
+        return pageObj
     },
-    storyCanBePublished: function(storyId, authorId) {
+    storyCanBePublished: ( writeable, numUnlinked, numOrphaned, numStart ) => {
+        return writeable && numUnlinked === 0 && numOrphaned === 0 && numStart === 1
+    },
+    oldstoryCanBePublished: function(storyId, authorId) {
         // function that checks if a story can be published
         // stories can have orphaned pages, and orphaned pages may be unfinished
         // all non-orphaned pages must pass checks

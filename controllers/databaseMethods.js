@@ -1,6 +1,7 @@
 import db from '../models/index.js';
 import check from './routevalidators.js';
 import str from '../constants/strings.js';
+import { where } from 'sequelize/types';
 
 export default {
     userSignIn: async (authKey) => {
@@ -21,14 +22,14 @@ export default {
     },
     findUser: async (userId) => {
         if (!check.isValidId(userId)) {
-            return { message: str.error.type.invalid.author}
+            return { message: str.error.type.invalid.author }
         }
         else {
             let dbUser = await db.User.findOne({ where: { id: userId } })
             return dbUser
         }
     },
-    checkUsernames: async (username) => {
+    uniqueName: async (username) => {
         let count = await db.User.count({ where: { displayName: username } })
         return count === 0 ? true : false
     },
@@ -275,7 +276,7 @@ export default {
             { type: db.Sequelize.QueryTypes.SELECT });
         return dbTags;
     },
-    findFirstPage: (authorId, storyId) => {
+    findFirstPage: (storyId) => {
         return db.Page.findOne({
             where: {
                 AuthorId: authorId,
@@ -285,6 +286,24 @@ export default {
         }).then((dbFirstPage) => {
             return dbFirstPage;
         });
+    },
+    findPageById: async (pageId) => {
+        if (!check.isValidId(pageId)) {
+            return { message: str.error.type.invalid.page }
+        }
+        let page = await db.Page.findOne({
+            where: {
+                id: pageId
+            },
+            include: [{
+                model: db.Story,
+                as: "Story",
+                attributes: [
+                    "isPublic",
+                ]
+            }]
+        })
+        return check.pageIsReadable(page)
     },
     findAllPagesInStory: (authorId, storyId) => {
         return db.Page.findAll({
@@ -309,10 +328,18 @@ export default {
             return dbLinks;
         });
     },
-    createNewPage: (pageObj) => {
-        return db.Page.create(pageObj).then((newPage) => {
-            return newPage;
-        });
+    createNewPage: async (pageObj) => {
+        if (!check.isValidId(pageObj.AuthorId)) {
+            return { message: str.error.type.invalid.author }
+        }
+        if (!check.isValidId(pageObj.StoryId)) {
+            return { message: str.error.type.invalid.story }
+        }
+        let newPage = await db.Page.create(pageObj);
+        if (!newPage) {
+            return { message: str.error.type.default }
+        }
+        return newPage
     },
     createMultiplePages: (pageObjArray) => {
         return db.Page.bulkCreate(pageObjArray).then((newPages) => {
@@ -324,21 +351,25 @@ export default {
             return newPagesId;
         });
     },
-    updatePage: (pageObj, pageid) => {
-        return db.Page.update({
-            title: pageObj.title,
-            content: pageObj.content,
-            isStart: pageObj.isStart,
-            isTBC: pageObj.isTBC,
-            isEnding: pageObj.isEnding,
-            isLinked: pageObj.isLinked,
-            isOrphaned: pageObj.isOrphaned,
-            contentFinished: pageObj.contentFinished
-        }, {
-                where: {
-                    id: pageid
-                }
-            });
+    updatePage: (pageObj, pageId, authorId) => {
+        if (!check.isValidId(authorId)) {
+            return { message: str.error.type.invalid.author }
+        }
+        if (!check.isValidId(pageId)) {
+            return { message: str.error.type.invalid.page }
+        }
+        let oldPage = await db.Page.findOne({ where: { id: pageId } });
+        let writeable = check.pageIsWriteable(oldPage);
+        // return error if writable check failed
+        if (writeable.message) {
+            return writeable
+        }
+        // update returns count of affected rows
+        let updatedPage = await db.Page.update(pageObj, { where: { id: pageId } });
+        if (!updatedPage) {
+            return { message: str.error.type.notFound.page }
+        }
+        return pageObj
     },
     deletePage: (pageid) => {
         return db.Page.destroy({

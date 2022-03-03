@@ -3,6 +3,7 @@ import loginRoute from './routes/login.js';
 import oauthCallbackRoute from './routes/oauth-callback.js';
 import logoutRoute from './routes/logout.js';
 import storyRoutes from './routes/story.js';
+import pageRoutes from './routes/page.js';
 import express, { json } from 'express';
 import expressSession from 'express-session';
 import cors from 'cors';
@@ -38,6 +39,7 @@ app.use('/login', loginRoute);
 app.use('/oauth-callback', oauthCallbackRoute);
 app.use('/logout', logoutRoute);
 app.use('/story', storyRoutes);
+app.use('/page', pageRoutes);
 
 // start server
 app.listen(PORT, () => console.log(`Server listening on port ${PORT}.`));

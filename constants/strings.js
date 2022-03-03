@@ -27,7 +27,8 @@ export default {
                     orphan: "Orphaned Page",
                     notFinished: "Page Not Finished"
                 }
-            }
+            },
+            default: "Unknown Error"
         },
         message: {
             notObj: "Error handler module expects an object!",
@@ -47,7 +48,10 @@ export default {
                 tag: "Tag Not Found",
                 authorStory: "Sorry, we couldn't find any stories by this author.",
             },
-            denied: "Hands off!",
+            denied: {
+                page: "Hands off!",
+                story: "Hands off!",
+            },
             notPublic: {
                 story: "That story's not ready for prime-time!",
                 page: "That page isn't ready for prime-time!"
