@@ -2,7 +2,6 @@ import db from '../models/index.js';
 import check from './routevalidators.js';
 import str from '../constants/strings.js';
 import dbvalid from './dbvalidators.js';
-import { where } from 'sequelize/types';
 
 export default {
     userSignIn: async (authKey) => {
@@ -31,7 +30,7 @@ export default {
         }
     },
     uniqueName: async (username) => {
-        if (dbvalid.userName(username)) {
+        if (!dbvalid.userName(username)) {
             return { message: str.error.type.invalid.string }
         }
         let count = await db.User.count({ where: { displayName: username } })
@@ -345,7 +344,7 @@ export default {
             return newPagesId;
         });
     },
-    updatePage: (pageObj, pageId, authorId) => {
+    updatePage: async (pageObj, pageId, authorId) => {
         if (!check.isValidId(authorId)) {
             return { message: str.error.type.invalid.author }
         }
@@ -353,10 +352,10 @@ export default {
             return { message: str.error.type.invalid.page }
         }
         let oldPage = await db.Page.findOne({ where: { id: pageId } });
-        let writeable = check.pageIsWriteable(oldPage);
-        // return error if writable check failed
-        if (writeable.message) {
-            return writeable
+        let writeErr = check.pageIsWriteable(oldPage);
+        // return error if check failed
+        if (writeErr.message) {
+            return writeErr
         }
         // update returns count of affected rows
         let updatedPage = await db.Page.update(pageObj, { where: { id: pageId } });

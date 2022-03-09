@@ -141,9 +141,9 @@ router.put("/update/:pageid", async (req, res) => {
 
 // delete an existing page
 // TODO: update db method and move check method call to db method
-router.delete("/api/page/delete/:id", async (req, res) => {
-    if(check.pageIsWriteable(req.body.pageid, req.session.token, req.body.storyid)) {
-        let deletedPage = await dbMethods.deletePage(req.body.pageid).catch( (err) => {
+router.delete("/delete/:pageid", async (req, res) => {
+    if(check.pageIsWriteable(req.params.pageid, req.session.token, req.body.storyid)) {
+        let deletedPage = await dbMethods.deletePage(req.params.pageid).catch( (err) => {
             return res.render(getError.statusCode(err), getError.messageTemplate(err));
         });
         if (deletedPage) {

@@ -45,17 +45,15 @@ router.get('/', (req, res) => {
 							}
 							res.send(
 								{
-									db: {
-										dbUser: {
-											id: dbResponse.dbUser.id,
-											displayName: dbResponse.dbUser.displayName
-										},
-										created: dbResponse.created
-									},
 									user: {
-										...introspectResponse,
+										id: dbResponse.dbUser.id,
+										displayName: dbResponse.dbUser.displayName,
+										exp: introspectResponse.exp || 0
 									},
-									...body
+									// other: {
+									// 	...introspectResponse,
+									// },
+									// ...body
 								}
 							);
 						}
@@ -81,7 +79,8 @@ router.get('/', (req, res) => {
 router.put("/:userid", async (req, res) => {
 	// uniqueName returns object with message. if message === 0, name is good
     let isUnique = await dbMethods.uniqueName(req.body.username);
-    if (!isUnique.message) {
+	console.log(isUnique)
+    if (isUnique.message === 0) {
         let updatedUser = await dbMethods.updateUser(req.params.userid, req.body.username);
         if (updatedUser.message) {
             return res.status(getError.statusCode(updatedUser)).send(getError.messageTemplate(updatedUser));

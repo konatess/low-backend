@@ -70,5 +70,6 @@ export default {
     url: {
         tags: "/tags",
         authors: "/authors",
-    }
+    },
+    defaultUsername: "test",
 }

@@ -34,6 +34,11 @@ export default {
             errorInfo.url = "/";
             errorInfo.linkDisplay = str.linkDisplay.home;
             break;
+        case str.error.type.invalid.string:
+            errorInfo.errorMessage = str.error.message.invalid.string;
+            errorInfo.url = "/";
+            errorInfo.linkDisplay = str.linkDisplay.home;
+            break;
         case str.error.type.invalid.page: 
             errorInfo.errorMessage = str.error.message.invalid.page;
             errorInfo.url = "/";
@@ -118,6 +123,9 @@ export default {
             statusNumber = 400;
             break;
         case str.error.type.invalid.unique:
+            statusNumber = 400;
+            break;
+        case str.error.type.invalid.string:
             statusNumber = 400;
             break;
         case str.error.type.invalid.page: 

@@ -66,6 +66,8 @@ router.put("/publish", (req, res) => {
     //     let err = { message: "Not Logged In" }
     //     return res.render(getError.statusCode(err), getError.messageTemplate(err));
     // }
+
+    // FIXME: changing the checks, change needs to be completed here.
     let toPublish = req.body.isPublic;
     if(toPublish==="true") {
         dbMethods.publishStory(req.body.storyId, req.body.authorId).then((publishingResult) => {
@@ -94,6 +96,7 @@ router.put("/publish", (req, res) => {
 
 // update story info route
 router.put("/update/:storyid", async (req, res) => {
+    // FIXME: changing the way to test this, incomplete. 
     let theStory = await check.storyIsWriteable(req.params.storyid, req.body.authorId).catch( (err) => {
         return alert(err.message);
     });
@@ -130,7 +133,7 @@ router.put("/update/:storyid", async (req, res) => {
 
 // delete a story and all it's pages and links
 router.delete("/:storyid", async (req, res) => {
-    // This needs error handling
+    // FIXME: This needs error handling
     // may make more sense to move some of this to db methods file
     let theStory = await check.storyIsWriteable(req.params.id, req.body.authorId);
     let numLinks = await db.Link.destroy({where: {StoryId: req.params.storyid}});
