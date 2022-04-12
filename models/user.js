@@ -10,6 +10,10 @@ export default function (sequelize, DataTypes) {
             validate: {
                 len: [3, 50]
             }
+        },
+        seeRestricted: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false
         }
     });
     User.associate = function(models) {
