@@ -13,7 +13,7 @@ export default function (sequelize, DataTypes) {
             type: DataTypes.STRING,
             allowNull: true,
             validate: {
-                len: [0, 100]
+                len: [0, 550]
             }
         },
         isPublic: {
