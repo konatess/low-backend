@@ -11,7 +11,7 @@ export default {
         return !validString(title) || title.length < 2 || title.length > 100 ? false : true
     },
     storyDesc: (description) => {
-        return !validString(description) || description.length > 100 ? false: true
+        return !validString(description) || description.length > 1000 ? false: true
     },
     tagName: (tagname) => {
         return !validString(tagname) || tagname.length < 2 || tagname.length > 50 ? false : true
