@@ -8,11 +8,11 @@ const tableNames = {
     usersTable: "users001",
 }
 
-async function main(callback, document) {
+async function main(callback, data, options) {
     try {
         await client.connect();
 
-        await callback(client, document);
+        await callback(client, data, options);
     } catch (error) {
         console.error(error);
     } finally {
@@ -35,9 +35,28 @@ async function createUser(client, userObj) {
     console.log(`New user created with the id ${result.insertedId}`)
 }
 
-main(createUser, {
-    username: "Scout",
-    viewRestricted: false,
+async function findUserbyName(client, username) {
+    const result = await client.db("low-test001").collection("users001").findOne({username: username});
+
+    if (result) {
+        console.log(`Found one user named ${username}: `);
+        console.log(result)
+    } else {
+        console.log(`No users found named ${username}`);
+    }
+}
+
+async function updateUserbyName (client, data) {
+    const result = await client.db("low-test001").collection("users001").updateOne({username: data.username}, {$set: data.updated});
+    console.log(`${result.matchedCount} users were found`);
+    console.log(`${result.modifiedCount} users were updated`);
+}
+
+main(updateUserbyName, {
+    username: "Felicia",
+    updated: {
+        viewRestricted: false
+    }
 }).catch(console.error);
 
 // {
