@@ -10,6 +10,7 @@
     "express": "^4.17.3",
     "express-session": "^1.17.2",
     "mongodb": "^4.6.0",
+    "mongoose": "^6.3.6",
     "mysql2": "^2.3.3",
     "request": "^2.88.2",
     "sequelize": "^6.16.1"

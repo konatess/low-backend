@@ -1,3 +1,5 @@
+import { AccessDeniedError } from "sequelize/types";
+
 export default {
     error: {
         type: {
@@ -72,4 +74,15 @@ export default {
         authors: "/authors",
     },
     defaultUsername: "test",
+    db: {
+        name: {
+            test: "low-test001"
+        },
+        c: {
+            user: "users001",
+            story: "stories001",
+            pages: "pages001",
+            tags: "tags001"
+        }
+    }
 }
