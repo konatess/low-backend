@@ -40,8 +40,9 @@ const methods = {
             })
         },
         findByName: (displayName) => {
+            let result;
             connectDB( async () => {
-                const result = await client.db(str.db.name).collection(str.db.c.users).findOne({displayName: displayName});
+                 result = await client.db(str.db.name.test).collection(str.db.c.users).findOne({displayName: displayName});
             
                 if (result) {
                     console.log(`Found user named ${displayName}:`);
@@ -50,6 +51,7 @@ const methods = {
                     console.log(`No users found named ${displayName}`);
                 }
             })
+            return result
         },
         findByAuth: (oAuthID) => {
             connectDB( async () => {
@@ -95,11 +97,13 @@ const methods = {
     
 }
 str.db.c.users
-// methods.findUserbyName("Jane");
+methods.users.findByName("Jane");
 
 // methods.createUser("Jane", "40b99983-2d70-48ef-b918-f8fa525b8cc2");
 
 // methods.findUserbyAuth("40b99983-2d70-48ef-b918-f8fa525b8cc2");
 // methods.findUserbyDBID("629d8e73da60ebfb250442ae");
 
-methods.stories.create(ObjectId("629d8e73da60ebfb250442ae"), "Magical Felines", "Jiji and Moony are silly cats." )
+// methods.stories.create(ObjectId("629d8e73da60ebfb250442ae"), "Magical Felines", "Jiji and Moony are silly cats." )
+
+export default methods;
