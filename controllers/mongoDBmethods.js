@@ -31,7 +31,7 @@ const methods = {
     users: {
         create: (displayName, oAuthID, viewRestricted = false) => {
             connectDB( async () => {
-                const result = await client.db(str.db.name).collection(str.db.c.users).insertOne({
+                const result = await client.db(str.db.name.test).collection(str.db.c.users).insertOne({
                     displayName: displayName,
                     oAuthID: oAuthID,
                     viewRestricted: viewRestricted
@@ -55,7 +55,7 @@ const methods = {
         },
         findByAuth: (oAuthID) => {
             connectDB( async () => {
-                const result = await client.db(str.db.name).collection(str.db.c.users).findOne({oAuthID: oAuthID});
+                const result = await client.db(str.db.name.test).collection(str.db.c.users).findOne({oAuthID: oAuthID});
                 if (result) {
                     console.log(`Found user with AuthID ${oAuthID}:`);
                     console.log(result)
@@ -66,7 +66,7 @@ const methods = {
         },
         findByDbId: (databaseID) => {
             connectDB( async () => {
-                const result = await client.db(str.db.name).collection(str.db.c.users).findOne(ObjectId(databaseID));
+                const result = await client.db(str.db.name.test).collection(str.db.c.users).findOne(ObjectId(databaseID));
                 if (result) {
                     console.log(`Found user with databaseID ${databaseID}:`);
                     console.log(result)
@@ -84,11 +84,18 @@ const methods = {
                 authorDbId: authorDbId,
                 isPublic: false,
                 warnings: warningsObj,
-                tags: tagsIdArr
+                tags: tagsIdArr,
+                updated: Date.now()
             }
             connectDB( async () => {
-                const result = await client.db(str.db.name).collection(str.db.c.stories).insertOne(newStory);
+                const result = await client.db(str.db.name.test).collection(str.db.c.stories).insertOne(newStory);
                 console.log(`New story created with the id ${result.insertedId}`)
+            })
+        },
+        getAllByAuthor: (authorDbId) => {
+            connectDB( async () => {
+                const result = await client.db(str.db.name.test).collection(str.db.c.stories).find({authorDbId: authorDbId}, {sort: {updated: 1}}).toArray();
+                console.log(result);
             })
         }
     },
@@ -96,8 +103,8 @@ const methods = {
     pages: {},
     
 }
-str.db.c.users
-methods.users.findByName("Jane");
+// str.db.c.users
+// methods.users.findByName("Jane");
 
 // methods.createUser("Jane", "40b99983-2d70-48ef-b918-f8fa525b8cc2");
 
@@ -105,5 +112,7 @@ methods.users.findByName("Jane");
 // methods.findUserbyDBID("629d8e73da60ebfb250442ae");
 
 // methods.stories.create(ObjectId("629d8e73da60ebfb250442ae"), "Magical Felines", "Jiji and Moony are silly cats." )
+
+// methods.stories.getAllByAuthor(ObjectId("629d8e73da60ebfb250442ae"));
 
 export default methods;
