@@ -81,7 +81,7 @@ const methods = {
             let newStory = {
                 title: title,
                 description: description,
-                authorDbId: authorDbId,
+                authorDbId: ObjectId(authorDbId),
                 isPublic: false,
                 warnings: warningsObj,
                 tags: tagsIdArr,
@@ -94,13 +94,54 @@ const methods = {
         },
         getAllByAuthor: (authorDbId) => {
             connectDB( async () => {
-                const result = await client.db(str.db.name.test).collection(str.db.c.stories).find({authorDbId: authorDbId}, {sort: {updated: 1}}).toArray();
-                console.log(result);
+                const result = await client.db(str.db.name.test).collection(str.db.c.stories).find({authorDbId: ObjectId(authorDbId)}, {sort: {updated: -1}}).toArray();
+                if (!result.length) {
+                    console.log('No stories found by this author')
+                }
+                else {
+                    console.log(result);
+                }
+            })
+        },
+        update: (storyId, title, description, warningsObj, tagsIdArr) => {
+            let updateObj = {
+                title: title,
+                description: description,
+                warnings: warningsObj,
+                tags: tagsIdArr,
+                updated: Date.now()
+            }
+            connectDB( async () => {
+                const result = await client.db(str.db.name.test).collection(str.db.c.stories).updateOne({_id: ObjectId(storyId)}, {$set: updateObj} )
+                console.log(`${result.matchedCount} document(s) matched the filter, updated ${result.modifiedCount} document(s)`)
+            })
+        }
+        // publish:
+        // delete:
+        // getAllPublic:
+        // getPublicByAuthor:
+        // getByTag
+    },
+    tags: {
+        findOrCreate: (tagName, restrictBool) => {
+            connectDB( async () => {
+                const result = await client.db(str.db.name.test).collection(str.db.c.tags).findOneAndUpdate({tagName: tagName}, {$setOnInsert: {tagName: tagName, restricted: restrictBool}}, {upsert: true})
+                // console.log(result)
+                if (result.lastErrorObject.updatedExisting) {
+                    console.log(result.value._id)
+                }
+                else {
+                    console.log(result.lastErrorObject.upserted)
+                }
             })
         }
     },
-    tags: {},
-    pages: {},
+    pages: {
+        // create:
+        // read:
+        // update:
+        // delete:
+    },
     
 }
 // str.db.c.users
@@ -111,8 +152,10 @@ const methods = {
 // methods.findUserbyAuth("40b99983-2d70-48ef-b918-f8fa525b8cc2");
 // methods.findUserbyDBID("629d8e73da60ebfb250442ae");
 
-// methods.stories.create(ObjectId("629d8e73da60ebfb250442ae"), "Magical Felines", "Jiji and Moony are silly cats." )
+// methods.stories.create("629d8e73da60ebfb250442ae", "To Delete", "I am created to be deleted." )
 
-// methods.stories.getAllByAuthor(ObjectId("629d8e73da60ebfb250442ae"));
+// methods.stories.getAllByAuthor("629d8e73da60ebfb250442ae");
+// methods.stories.update("62e8b6161db5d0fa0ec6f461", "Hippopotamus", "The River Horse speaks of mud and reeds.")
+// methods.tags.findOrCreate("arctic", false)
 
 export default methods;
