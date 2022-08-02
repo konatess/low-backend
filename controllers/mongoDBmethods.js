@@ -31,12 +31,17 @@ const methods = {
     users: {
         create: (displayName, oAuthID, viewRestricted = false) => {
             connectDB( async () => {
-                const result = await client.db(str.db.name.test).collection(str.db.c.users).insertOne({
+                const result = await client.db(str.db.name.test).collection(str.db.c.users).findOneAndUpdate({displayName: displayName,}, {$setOnInsert: {
                     displayName: displayName,
                     oAuthID: oAuthID,
                     viewRestricted: viewRestricted
-                });
-                console.log(`New user created with the id ${result.insertedId}`)
+                }}, {upsert: true});
+                if (result.lastErrorObject.updatedExisting) {
+                    console.log("This name is already taken")
+                }
+                else {
+                    console.log(`User was created with database ID: ${result.lastErrorObject.upserted}`)
+                }
             })
         },
         findByName: (displayName) => {
@@ -158,7 +163,8 @@ const methods = {
 // str.db.c.users
 // methods.users.findByName("Jane");
 
-// methods.createUser("Jane", "40b99983-2d70-48ef-b918-f8fa525b8cc2");
+// methods.users.create("Jane", "40b99983-2d70-48ef-b918-f8fa525b8cc2");
+methods.users.create("Delete Me", "112ac3fb-f458-4b06-90e3-737ea96d545b");
 
 // methods.findUserbyAuth("40b99983-2d70-48ef-b918-f8fa525b8cc2");
 // methods.findUserbyDBID("629d8e73da60ebfb250442ae");
@@ -169,5 +175,6 @@ const methods = {
 // methods.stories.update("62e8b6161db5d0fa0ec6f461", "Hippopotamus", "The River Horse speaks of mud and reeds.")
 // methods.tags.findOrCreate("arctic", false)
 // methods.stories.getById("62e8b6161db5d0fa0ec6f461")
+
 
 export default methods;
