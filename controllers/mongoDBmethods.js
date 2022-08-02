@@ -115,12 +115,23 @@ const methods = {
                 const result = await client.db(str.db.name.test).collection(str.db.c.stories).updateOne({_id: ObjectId(storyId)}, {$set: updateObj} )
                 console.log(`${result.matchedCount} document(s) matched the filter, updated ${result.modifiedCount} document(s)`)
             })
+        },
+        getById: (storyId) => {
+            connectDB( async () => {
+                const result = await client.db(str.db.name.test).collection(str.db.c.stories).findOne(ObjectId(storyId));
+                if (result) {
+                    console.log(`Found story with _id ${storyId}:`);
+                    console.log(result)
+                } else {
+                    console.log(`No stories found with _id ${storyId}`);
+                }
+            })
         }
         // publish:
-        // delete:
+        // deleteById:
         // getAllPublic:
         // getPublicByAuthor:
-        // getByTag
+        // getPublicByTag
     },
     tags: {
         findOrCreate: (tagName, restrictBool) => {
@@ -157,5 +168,6 @@ const methods = {
 // methods.stories.getAllByAuthor("629d8e73da60ebfb250442ae");
 // methods.stories.update("62e8b6161db5d0fa0ec6f461", "Hippopotamus", "The River Horse speaks of mud and reeds.")
 // methods.tags.findOrCreate("arctic", false)
+// methods.stories.getById("62e8b6161db5d0fa0ec6f461")
 
 export default methods;
