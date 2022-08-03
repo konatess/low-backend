@@ -79,10 +79,13 @@ const methods = {
                     console.log(`No users found with databaseID ${databaseID}`);
                 }
             })
-        }
+        },
+        // update:
+        // delete:
     },
     stories: {
         create: (authorDbId, title, description, warningsObj, tagsIdArr) => {
+            // TODO: create start page when creating story?
             let newStory = {
                 title: title,
                 description: description,
@@ -136,13 +139,12 @@ const methods = {
         // deleteById:
         // getAllPublic:
         // getPublicByAuthor:
-        // getPublicByTag
+        // getPublicByTag:
     },
     tags: {
         findOrCreate: (tagName, restrictBool) => {
             connectDB( async () => {
                 const result = await client.db(str.db.name.test).collection(str.db.c.tags).findOneAndUpdate({tagName: tagName}, {$setOnInsert: {tagName: tagName, restricted: restrictBool}}, {upsert: true})
-                // console.log(result)
                 if (result.lastErrorObject.updatedExisting) {
                     console.log(result.value._id)
                 }
@@ -150,13 +152,99 @@ const methods = {
                     console.log(result.lastErrorObject.upserted)
                 }
             })
+        },
+        getAll: () => {
+            connectDB(async () => {
+                const result = await client.db(str.db.name.test).collection(str.db.c.tags).find({}, {sort: {tagName: 1}}).toArray();
+                if (!result.length) {
+                    console.log('No tags found')
+                }
+                else {
+                    console.log(result);
+                }
+            })
+        },
+        getUnrestricted: () => {
+            connectDB(async () => {
+                const result = await client.db(str.db.name.test).collection(str.db.c.tags).find({restricted: false}, {sort: {tagName: 1}}).toArray();
+                if (!result.length) {
+                    console.log('No tags found')
+                }
+                else {
+                    console.log(result);
+                }
+            })
+        },
+        getAllInUse: () => {
+            connectDB(async () => {
+                const result = await client.db(str.db.name.test).collection(str.db.c.stories).aggregate([
+                    {
+                        $lookup: {
+                            from: str.db.c.tags,
+                            localField: "tags",
+                            foreignField: "_id",
+                            as: "allTagsInUse"
+                        }
+                    },
+                    { $unwind: "$allTagsInUse" },
+                    { $replaceRoot: { newRoot: "$allTagsInUse" } },
+                    { $sort: {tagName: 1}}
+                  ]).toArray();
+                if (!result.length) {
+                    console.log('No tags in use')
+                }
+                else {
+                    console.log(result);
+                }
+            })
+        },
+        getUnrestrictedInUse: () => {
+            connectDB(async () => {
+                const result = await client.db(str.db.name.test).collection(str.db.c.stories).aggregate([
+                    {
+                      $lookup: {
+                        from: str.db.c.tags,
+                        localField: "tags",
+                        foreignField: "_id",
+                        as: "allTagsInUse"
+                      }
+                    },
+                    { $unwind: "$allTagsInUse" },
+                    { $replaceRoot: {newRoot: "$allTagsInUse"} },
+                    { $match: {restricted: false} },
+                    { $sort: {tagName: 1}}
+                  ]).toArray();
+                if (!result.length) {
+                    console.log('No tags in use')
+                }
+                else {
+                    console.log(result);
+                }
+            })
+        },
+        // delete: (only if not in use)
+        delete: (id) => {
+            connectDB( async () => {
+                const inUse = await client.db(str.db.name.test).collection(str.db.c.stories).findOne({tags: ObjectId(id)});
+                // console.log(inUse)
+                if (inUse) {
+                    console.log("This tag is in use.")
+                }
+                else {
+                    console.log(`Tag ${id} can be deleted.`)
+                    const status = await client.db(str.db.name.test).collection(str.db.c.tags).deleteOne({_id: ObjectId(id)})
+                    console.log(status)
+                }
+            })
         }
     },
     pages: {
         // create:
-        // read:
+        // getById:
         // update:
         // delete:
+        // deleteCleanUp: (check children of deleted page and update orphan status)
+        // createBranch: (batch create children)
     },
     
 }
@@ -164,7 +252,7 @@ const methods = {
 // methods.users.findByName("Jane");
 
 // methods.users.create("Jane", "40b99983-2d70-48ef-b918-f8fa525b8cc2");
-methods.users.create("Delete Me", "112ac3fb-f458-4b06-90e3-737ea96d545b");
+// methods.users.create("Delete Me", "112ac3fb-f458-4b06-90e3-737ea96d545b");
 
 // methods.findUserbyAuth("40b99983-2d70-48ef-b918-f8fa525b8cc2");
 // methods.findUserbyDBID("629d8e73da60ebfb250442ae");
@@ -172,9 +260,16 @@ methods.users.create("Delete Me", "112ac3fb-f458-4b06-90e3-737ea96d545b");
 // methods.stories.create("629d8e73da60ebfb250442ae", "To Delete", "I am created to be deleted." )
 
 // methods.stories.getAllByAuthor("629d8e73da60ebfb250442ae");
-// methods.stories.update("62e8b6161db5d0fa0ec6f461", "Hippopotamus", "The River Horse speaks of mud and reeds.")
-// methods.tags.findOrCreate("arctic", false)
+// methods.stories.update("62e8b6161db5d0fa0ec6f461", "Hippopotamus", "The River Horse speaks of mud and reeds.", null, [ObjectId("62e8c63d87ae97aeba50efbb"), ObjectId("62ea4743b61bc35177c13671"), ObjectId("62ea475ab61bc35177c17c7b")])
+// methods.stories.update("62e776c7895f939880b6eda9", "Magical Felines", "Jiji and Moony are silly cats.", null, [ObjectId("62ea46f9b61bc35177c045c3"), ObjectId("62ea4735b61bc35177c106e2")])
+// methods.tags.findOrCreate("deletable", false)
 // methods.stories.getById("62e8b6161db5d0fa0ec6f461")
+
+// methods.tags.getAll()
+// methods.tags.getUnrestricted()
+// methods.tags.getAllInUse()
+// methods.tags.getUnrestrictedInUse()
+methods.tags.delete("62ea4fc5b61bc35177d9402d")
 
 
 export default methods;
