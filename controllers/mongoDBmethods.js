@@ -206,11 +206,11 @@ const methods = {
                         from: str.db.c.tags,
                         localField: "tags",
                         foreignField: "_id",
-                        as: "allTagsInUse"
+                        as: "unrestrictedInUse"
                       }
                     },
-                    { $unwind: "$allTagsInUse" },
-                    { $replaceRoot: {newRoot: "$allTagsInUse"} },
+                    { $unwind: "$unrestrictedInUse" },
+                    { $replaceRoot: {newRoot: "$unrestrictedInUse"} },
                     { $match: {restricted: false} },
                     { $sort: {tagName: 1}}
                   ]).toArray();
@@ -222,11 +222,9 @@ const methods = {
                 }
             })
         },
-        // delete: (only if not in use)
         delete: (id) => {
             connectDB( async () => {
                 const inUse = await client.db(str.db.name.test).collection(str.db.c.stories).findOne({tags: ObjectId(id)});
-                // console.log(inUse)
                 if (inUse) {
                     console.log("This tag is in use.")
                 }
@@ -239,9 +237,58 @@ const methods = {
         }
     },
     pages: {
-        // create:
-        // getById:
-        // update:
+        create: (storyId, title, content, contentFinished, isStart, isTBC, isEnding, isOrphaned, childArr) => {
+            let childPages = childArr.length ? childArr.map(child => {return ObjectId(child)}) : childArr
+            let page = {
+                storyId: ObjectId(storyId),
+                title: title,
+                content: content,
+                contentFinished: contentFinished,
+                isStart: isStart,
+                isTBC: isTBC,
+                isEnding: isEnding,
+                isOrphaned: isOrphaned,
+                updated: Date.now(),
+                childPages: childPages
+            }
+            connectDB( async () => {
+                const result = await client.db(str.db.name.test).collection(str.db.c.pages).insertOne(page)
+                console.log(`New page created with the id ${result.insertedId}`)
+            })
+        },
+        getById: (pageId) => {
+            connectDB(async () => {
+                const result = await client.db(str.db.name.test).collection(str.db.c.pages).findOne(ObjectId(pageId))
+                if (result) {
+                    console.log(`Found page with pageId ${pageId}:`);
+                    console.log(result)
+                } else {
+                    console.log(`No pages found with pageId ${pageId}`);
+                }
+            })
+        },
+        update: (pageId, title, content, contentFinished, isStart, isTBC, isEnding, isOrphaned, childArr) => {
+            let childPages = childArr.length ? childArr.map(child => {return ObjectId(child)}) : childArr
+            connectDB( async () => {
+                const result = await client.db(str.db.name.test).collection(str.db.c.pages).findOneAndUpdate({_id: ObjectId(pageId)}, {$set: {
+                    title: title,
+                    content: content,
+                    contentFinished: contentFinished,
+                    isStart: isStart,
+                    isTBC: isTBC,
+                    isEnding: isEnding,
+                    isOrphaned: isOrphaned,
+                    updated: Date.now(),
+                    childPages: childPages
+                }})
+                if (result.lastErrorObject.updatedExisting) {
+                    console.log(result.value._id)
+                }
+                else {
+                    console.log(result)
+                }
+            })
+        }
         // delete:
         // deleteCleanUp: (check children of deleted page and update orphan status)
         // createBranch: (batch create children)
@@ -269,7 +316,10 @@ const methods = {
 // methods.tags.getUnrestricted()
 // methods.tags.getAllInUse()
 // methods.tags.getUnrestrictedInUse()
-methods.tags.delete("62ea4fc5b61bc35177d9402d")
-
+// methods.tags.delete("62ea4fc5b61bc35177d9402d")
+// methods.pages.create("62e8b6161db5d0fa0ec6f461", "Start", "I, the River Horse sing of mud and reeds, of the great river waters and soft banks.", true, true, true, false, false, [])
+// methods.pages.create("62e8b6161db5d0fa0ec6f461", "Continue from Start", "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu. In enim justo, rhoncus ut, imperdiet a, venenatis vitae, justo. Nullam dictum felis eu pede mollis pretium. Integer tincidunt. Cras dapibu.", false, false, true, false, false, [])
+// methods.pages.getById("62eb7e83bae5685266c8cfac")
+methods.pages.update("62eb7e83bae5685266c8cfac", "Start", "I, the River Horse sing of mud and reeds, of the great river waters and soft banks.", true, true, true, false, false, ["62eb827009777fdc7bc9b6b3"])
 
 export default methods;
