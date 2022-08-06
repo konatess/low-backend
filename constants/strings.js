@@ -80,7 +80,8 @@ export default {
             users: "users001",
             stories: "stories001",
             pages: "pages001",
-            tags: "tags001"
+            tags: "tags001",
+            links: "links001"
         }
     }
 }

@@ -288,12 +288,95 @@ const methods = {
                     console.log(result)
                 }
             })
-        }
+        },
         // delete:
-        // deleteCleanUp: (check children of deleted page and update orphan status)
+        // deleteCleanUp: (check children of deleted page and update orphan status, check for parent pages and remove deleted page from childPages)
+        deleteCleanUp: (pageId, childArr) => {
+            connectDB( async () => {
+                // remove id from parent page childPages arrays
+                // const resultParents = await client.db(str.db.name.test).collection(str.db.c.pages).updateMany({childPages: ObjectId(pageId)}, {$pull: {childPages: ObjectId(pageId)}})
+                // console.log(`${resultParents.matchedCount} parent page(s) matched the filter, updated ${resultParents.modifiedCount} page(s)`);
+                if (childArr.length) {
+                    // find all child pages with no other parents
+                        // take each childId
+                        // find at least one parent (not the deleted page, this should be a previous step.)
+                        // if no parent page, update isOrphan to true for that child
+                    let childIds = childArr.map(child => { return ObjectId(child)})
+                    const nonOrphans = await client.db(str.db.name.test).collection(str.db.c.pages).aggregate([
+                        { $match: {childPages: {$in: childIds}} },
+                        { $project: {childPages: 
+                            { $filter: {
+                                input: "$childPages",
+                                as: "child",
+                                cond: {$setIsSubset: [["$$child"], childIds]}
+                            } },
+                            _id:0
+                        } },
+                        { $unwind: { path: "$childPages" } },
+                        { $group: {_id: "$childPages"} }
+                    ]).toArray()
+                    console.log(nonOrphans)
+                    let orphans = childIds.filter(childId => {
+                        let child = {_id: childId}
+                        console.log(child)
+                        return nonOrphans.includes(child)
+                    })
+                    console.log(orphans)
+                }
+                else {
+                    console.log("No children")
+                }
+                // const resultChild = await client.db(str.db.name.test).collection(str.db.c.pages).updateOne({_d: childId}, {$set: {isOrphan: true}})
+            })
+        }
         // createBranch: (batch create children)
     },
-    
+    links: {
+        create: (linksArr) => {
+            for (let i = 0; i < linksArr.length; i++) {
+                linksArr[i].fromPageId = ObjectId(linksArr[i].fromPageId);
+                linksArr[i].toPageId = ObjectId(linksArr[i].toPageId);
+            }
+            connectDB( async () => {
+                const result = await client.db(str.db.name.test).collection(str.db.c.links).insertMany(linksArr)
+                console.log(`${result.insertedCount} links were inserted`)
+                console.log(result.insertedIds)
+            })
+        },
+        getByParent: (parentPageId) => {
+            let parent = ObjectId(parentPageId);
+            connectDB( async () => {
+                const result = await client.db(str.db.name.test).collection(str.db.c.links).find({fromPageId: parent}).toArray();
+                console.log(result)
+            })
+        },
+        getByChild: (childPageId) => {
+            let child = ObjectId(childPageId);
+            connectDB( async () => {
+                const result = await client.db(str.db.name.test).collection(str.db.c.links).find({toPageId: child}).toArray();
+                console.log(result)
+            })
+        },
+        updateById: (linkObj) => {
+            linkObj._id = ObjectId(linkObj._id);
+            linkObj.fromPageId = ObjectId(linkObj.fromPageId)
+            linkObj.toPageId = ObjectId(linkObj.toPageId)
+            connectDB(async () => {
+                const result = await client.db(str.db.name.test).collection(str.db.c.links).updateOne({_id: linkObj._id}, {$set: linkObj});
+                console.log(`${result.matchedCount} links matched the search, ${result.modifiedCount} links were updated`)
+            })
+        },
+        deleteById: (linkId) => {
+            connectDB( async () => {
+                const result = await client.db(str.db.name.test).collection(str.db.c.links).deleteOne({_id: ObjectId(linkId)})
+                if (result.deletedCount === 1) {
+                    console.log("Successfully deleted the link.");
+                  } else {
+                    console.log("No links matched the query. Deleted 0 links.");
+                  }
+            })
+        }
+    }
 }
 // str.db.c.users
 // methods.users.findByName("Jane");
@@ -318,8 +401,15 @@ const methods = {
 // methods.tags.getUnrestrictedInUse()
 // methods.tags.delete("62ea4fc5b61bc35177d9402d")
 // methods.pages.create("62e8b6161db5d0fa0ec6f461", "Start", "I, the River Horse sing of mud and reeds, of the great river waters and soft banks.", true, true, true, false, false, [])
-// methods.pages.create("62e8b6161db5d0fa0ec6f461", "Continue from Start", "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu. In enim justo, rhoncus ut, imperdiet a, venenatis vitae, justo. Nullam dictum felis eu pede mollis pretium. Integer tincidunt. Cras dapibu.", false, false, true, false, false, [])
+// methods.pages.create("62e8b6161db5d0fa0ec6f461", "Random Branch", "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu. In enim justo, rhoncus ut, imperdiet a, venenatis vitae, justo. Nullam dictum felis eu pede mollis pretium. Integer tincidunt. Cras dapibu.", false, false, true, false, false, [])
 // methods.pages.getById("62eb7e83bae5685266c8cfac")
-methods.pages.update("62eb7e83bae5685266c8cfac", "Start", "I, the River Horse sing of mud and reeds, of the great river waters and soft banks.", true, true, true, false, false, ["62eb827009777fdc7bc9b6b3"])
+// methods.pages.update("62ecc8d7ace3b424b3754579", "Continue from Start", "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu. In enim justo, rhoncus ut, imperdiet a, venenatis vitae, justo. Nullam dictum felis eu pede mollis pretium. Integer tincidunt. Cras dapibu.", false, false, true, false, false, ["62ecc8eaef27ab16ec76a5a6", "62ece9573090ccf54dca01cf"])
+// methods.pages.deleteCleanUp("62ecc8d7ace3b424b3754579", ["62eb7e83bae5685266c8cfac", "62ece9573090ccf54dca01cf"])
+// methods.links.create([{fromPageId: "62eb7e83bae5685266c8cfac", toPageId: "62eb827009777fdc7bc9b6b3", linkName: "Continue"},{fromPageId: "62eb827009777fdc7bc9b6b3", toPageId: "62ecc8d7ace3b424b3754579", linkName: "Continue"} ])
+// methods.links.getByParent("62eb7e83bae5685266c8cfac")
+// methods.links.getByChild("62ecc8d7ace3b424b3754579")
+// methods.links.updateById({ _id: "62ee16bfacdf0f5a927f8255", fromPageId: "62ecc8d7ace3b424b3754579", toPageId: "62ece9573090ccf54dca01cf", linkName: 'Continue'})
+// methods.links.deleteById("62ee159aafb5d7db41a9e943")
+
 
 export default methods;
