@@ -332,8 +332,9 @@ const methods = {
         // createBranch: (batch create children)
     },
     links: {
-        create: (linksArr) => {
+        create: (storyId, linksArr) => {
             for (let i = 0; i < linksArr.length; i++) {
+                linksArr[i].storyId = ObjectId(storyId)
                 linksArr[i].fromPageId = ObjectId(linksArr[i].fromPageId);
                 linksArr[i].toPageId = ObjectId(linksArr[i].toPageId);
             }
@@ -357,12 +358,13 @@ const methods = {
                 console.log(result)
             })
         },
-        updateById: (linkObj) => {
-            linkObj._id = ObjectId(linkObj._id);
-            linkObj.fromPageId = ObjectId(linkObj.fromPageId)
-            linkObj.toPageId = ObjectId(linkObj.toPageId)
+        updateById: (linkId, fromPageId, toPageId, linkName) => {
+            let linkObj = {};
+            if (fromPageId) { linkObj.fromPageId = ObjectId(fromPageId) }
+            if (toPageId) { linkObj.toPageId = ObjectId(linkObj.toPageId) }
+            if (linkName) { linkObj.linkName = linkName }
             connectDB(async () => {
-                const result = await client.db(str.db.name.test).collection(str.db.c.links).updateOne({_id: linkObj._id}, {$set: linkObj});
+                const result = await client.db(str.db.name.test).collection(str.db.c.links).updateOne({_id: ObjectId(linkId)}, {$set: linkObj});
                 console.log(`${result.matchedCount} links matched the search, ${result.modifiedCount} links were updated`)
             })
         },
@@ -405,11 +407,11 @@ const methods = {
 // methods.pages.getById("62eb7e83bae5685266c8cfac")
 // methods.pages.update("62ecc8d7ace3b424b3754579", "Continue from Start", "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu. In enim justo, rhoncus ut, imperdiet a, venenatis vitae, justo. Nullam dictum felis eu pede mollis pretium. Integer tincidunt. Cras dapibu.", false, false, true, false, false, ["62ecc8eaef27ab16ec76a5a6", "62ece9573090ccf54dca01cf"])
 // methods.pages.deleteCleanUp("62ecc8d7ace3b424b3754579", ["62eb7e83bae5685266c8cfac", "62ece9573090ccf54dca01cf"])
-// methods.links.create([{fromPageId: "62eb7e83bae5685266c8cfac", toPageId: "62eb827009777fdc7bc9b6b3", linkName: "Continue"},{fromPageId: "62eb827009777fdc7bc9b6b3", toPageId: "62ecc8d7ace3b424b3754579", linkName: "Continue"} ])
+// methods.links.create( "62e8b6161db5d0fa0ec6f461", [{fromPageId: "62eb7e83bae5685266c8cfac", toPageId: "62eb827009777fdc7bc9b6b3", linkName: "Continue"},{fromPageId: "62eb827009777fdc7bc9b6b3", toPageId: "62ecc8d7ace3b424b3754579", linkName: "Continue"} ])
 // methods.links.getByParent("62eb7e83bae5685266c8cfac")
 // methods.links.getByChild("62ecc8d7ace3b424b3754579")
-// methods.links.updateById({ _id: "62ee16bfacdf0f5a927f8255", fromPageId: "62ecc8d7ace3b424b3754579", toPageId: "62ece9573090ccf54dca01cf", linkName: 'Continue'})
-// methods.links.deleteById("62ee159aafb5d7db41a9e943")
+// methods.links.updateById("62ee3d6c9cebe920ea7818ae", null, null, 'Straight ahead')
+// methods.links.deleteById("62ee161cf44052eeaf64534e")
 
 
 export default methods;
